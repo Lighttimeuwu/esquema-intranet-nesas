@@ -1,0 +1,1660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Control — Base Informes</title>
+  <!-- Tipografías modernas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Librería SheetJS para lectura de Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg-body: #f4f7fb;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f8fafc;
+      --border-light: #e2e8f0;
+      --border-hover: #cbd5e1;
+
+      --text-main: #1e293b;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+
+      /* Paleta decorativa pastel / suave */
+      --blue-soft: #eff6ff;
+      --blue-border: #bfdbfe;
+      --blue-accent: #3b82f6;
+      --blue-text: #1d4ed8;
+
+      --mint-soft: #ecfdf5;
+      --mint-border: #a7f3d0;
+      --mint-accent: #10b981;
+      --mint-text: #047857;
+
+      --amber-soft: #fffbeb;
+      --amber-border: #fde68a;
+      --amber-accent: #f59e0b;
+      --amber-text: #b45309;
+
+      --violet-soft: #f5f3ff;
+      --violet-border: #ddd6fe;
+      --violet-accent: #8b5cf6;
+      --violet-text: #6d28d9;
+
+      --rose-soft: #fff1f2;
+      --rose-border: #fecdd3;
+      --rose-accent: #f43f5e;
+      --rose-text: #be123c;
+
+      --shadow-sm: 0 2px 8px -2px rgba(15, 23, 42, 0.05), 0 1px 4px -1px rgba(15, 23, 42, 0.03);
+      --shadow-md: 0 12px 28px -6px rgba(15, 23, 42, 0.07), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+      --shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.09), 0 8px 16px -4px rgba(15, 23, 42, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-body);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(219, 234, 254, 0.55) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(237, 233, 254, 0.55) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(209, 250, 229, 0.4) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 44px 28px;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .container {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    /* =========================================================
+       ENCABEZADO DECORADO CON ESTILO GLASSMORPHISM SUAVE
+    ========================================================== */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 20px;
+      padding: 22px 30px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid var(--blue-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.8);
+    }
+
+    .header-title h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .header-title p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--mint-accent);
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+    }
+
+    .upload-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      padding: 11px 20px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+
+    .upload-label:hover {
+      border-color: var(--blue-border);
+      background: var(--blue-soft);
+      color: var(--blue-text);
+      transform: translateY(-1px);
+    }
+
+    .upload-label input {
+      display: none;
+    }
+
+    /* Navegación superior y resumen global */
+    .module-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      margin-bottom: 30px;
+      overflow-x: auto;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 16px;
+      box-shadow: var(--shadow-sm);
+      scrollbar-width: thin;
+    }
+
+    .nav-option {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      min-height: 42px;
+      padding: 9px 14px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-secondary);
+      font: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .nav-option:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    .nav-option[aria-current="page"] {
+      background: var(--blue-soft);
+      border-color: var(--blue-border);
+      color: var(--blue-text);
+    }
+
+    .icon-blue { background: var(--blue-soft); border: 1px solid var(--blue-border); }
+    .icon-mint { background: var(--mint-soft); border: 1px solid var(--mint-border); }
+    .icon-amber { background: var(--amber-soft); border: 1px solid var(--amber-border); }
+    .icon-violet { background: var(--violet-soft); border: 1px solid var(--violet-border); }
+    .icon-rose { background: var(--rose-soft); border: 1px solid var(--rose-border); }
+
+    #main-menu {
+      padding: 8px 0 30px;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+
+    #main-menu.is-leaving {
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+    }
+
+    #main-menu[hidden] {
+      display: none;
+    }
+
+    .dashboard-intro {
+      margin-bottom: 24px;
+    }
+
+    .dashboard-intro h2 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .dashboard-intro p {
+      font-size: 0.94rem;
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+
+    .global-kpis {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-bottom: 26px;
+    }
+
+    .global-kpis .kpi-box {
+      min-height: 158px;
+    }
+
+    .dashboard-note {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      color: var(--text-secondary);
+      font-size: 0.87rem;
+    }
+
+    .dashboard-note strong {
+      color: var(--text-main);
+    }
+
+    .casilla-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+    }
+
+    .tag-blue { background: var(--blue-soft); color: var(--blue-text); border: 1px solid var(--blue-border); }
+    .tag-mint { background: var(--mint-soft); color: var(--mint-text); border: 1px solid var(--mint-border); }
+    .tag-amber { background: var(--amber-soft); color: var(--amber-text); border: 1px solid var(--amber-border); }
+    .tag-violet { background: var(--violet-soft); color: var(--violet-text); border: 1px solid var(--violet-border); }
+    .tag-rose { background: var(--rose-soft); color: var(--rose-text); border: 1px solid var(--rose-border); }
+
+    /* =========================================================
+       MÓDULOS INTERNOS (AISLADOS AL HACER CLIC)
+    ========================================================== */
+    .module-view {
+      display: none;
+      animation: fadeSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .module-view.active {
+      display: block;
+    }
+
+    .module-view[hidden] {
+      display: none;
+    }
+
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .back-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 34px;
+      flex-wrap: wrap;
+      gap: 16px;
+      background: var(--bg-surface);
+      padding: 16px 24px;
+      border-radius: 16px;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back:hover {
+      background: var(--border-light);
+      transform: translateX(-2px);
+    }
+
+    /* Tarjetas de KPIs Decoradas */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .kpi-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 18px;
+      padding: 24px 26px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .kpi-label {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .kpi-mini-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+    }
+
+    .kpi-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Sub-casillas decoradas */
+    .subcasillas-section {
+      margin-bottom: 40px;
+    }
+
+    .section-subtitle {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .subcasillas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      gap: 16px;
+    }
+
+    .subcasilla {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .subcasilla:hover {
+      border-color: var(--blue-border);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .subcasilla.selected {
+      background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+      border-color: var(--blue-accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .subcasilla-title {
+      font-size: 0.89rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .subcasilla-meta {
+      font-size: 0.79rem;
+      color: var(--text-secondary);
+    }
+
+    /* Paneles y Tablas Estilizadas */
+    .content-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 36px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 26px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-light);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .panel-header h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      border: 1px solid var(--border-light);
+      background: var(--bg-subtle);
+      padding: 10px 16px 10px 38px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      min-width: 260px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--blue-accent);
+      background: var(--bg-surface);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+      font-size: 0.89rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 18px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    td {
+      padding: 16px 18px;
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      border-top: 1px solid var(--border-light);
+      border-bottom: 1px solid var(--border-light);
+      transition: background 0.15s ease;
+    }
+
+    tr:hover td {
+      background: #f1f5f9;
+    }
+
+    tr td:first-child {
+      border-left: 1px solid var(--border-light);
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    tr td:last-child {
+      border-right: 1px solid var(--border-light);
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    /* Avatares con Iniciales */
+    .user-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--blue-soft);
+      border: 1px solid var(--blue-border);
+      color: var(--blue-text);
+      font-weight: 700;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Barras de progreso con gradiente suave */
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #60a5fa, #3b82f6);
+      border-radius: 999px;
+    }
+
+    /* Medallas de Ranking */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.84rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+    }
+
+    .rank-1 { background: #fef3c7; border-color: #fde68a; color: #b45309; }
+    .rank-2 { background: #f1f5f9; border-color: #cbd5e1; color: #334155; }
+    .rank-3 { background: #ffedd5; border-color: #fed7aa; color: #c2410c; }
+
+    /* Mapa de Puestos Estilizado */
+    .seats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+      gap: 18px;
+      margin-top: 12px;
+    }
+
+    .seat-box {
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid var(--border-light);
+      border-radius: 14px;
+      padding: 18px 14px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+    }
+
+    .seat-box:hover {
+      transform: translateY(-3px);
+      border-color: var(--rose-border);
+      box-shadow: var(--shadow-md);
+    }
+
+    .seat-icon {
+      width: 38px;
+      height: 38px;
+      margin: 0 auto 10px;
+      border-radius: 10px;
+      background: var(--rose-soft);
+      border: 1px solid var(--rose-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .seat-box .seat-name {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-main);
+    }
+
+    .seat-box .seat-zone {
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-top: 8px;
+    }
+
+    /* Toggle suave para descontar domingos */
+    .toggle-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--mint-soft);
+      border: 1px solid var(--mint-border);
+      color: var(--mint-text);
+      padding: 9px 18px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-box input {
+      accent-color: var(--mint-accent);
+      width: 16px;
+      height: 16px;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 22px 14px;
+      }
+
+      .header-bar {
+        padding: 18px;
+        margin-bottom: 24px;
+      }
+
+      .module-nav {
+        margin-bottom: 22px;
+      }
+
+      .dashboard-intro h2 {
+        font-size: 1.4rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- ENCABEZADO SUPERIOR DECORADO -->
+    <header class="header-bar">
+      <div class="brand-group">
+        <div class="brand-icon">📊</div>
+        <div class="header-title">
+          <h1>Centro de Control — Base Informes</h1>
+          <p>
+            <span class="status-dot"></span>
+            <span id="status-subtitle">12 hojas sincronizadas · Resumen global y módulos</span>
+          </p>
+        </div>
+      </div>
+      <label class="upload-label" title="Cargar archivo BASE INFORMESS.xlsx">
+        <span>📂 Actualizar Excel (.xlsx)</span>
+        <input type="file" id="excel-input" accept=".xlsx,.xls" />
+      </label>
+    </header>
+
+    <nav class="module-nav" aria-label="Navegación principal">
+      <button class="nav-option" type="button" data-module="dashboard" aria-current="page" onclick="backToMenu()">🏠 Resumen</button>
+      <button class="nav-option" type="button" data-module="mod-corte" onclick="openModule('mod-corte')">🗂️ Corte acumulado</button>
+      <button class="nav-option" type="button" data-module="mod-comisiones" onclick="openModule('mod-comisiones')">💸 Liquidación nómina</button>
+      <button class="nav-option" type="button" data-module="mod-ranking" onclick="openModule('mod-ranking')">🏆 Escalafón y bonos</button>
+      <button class="nav-option" type="button" data-module="mod-diario" onclick="openModule('mod-diario')">⏱️ Operación diaria</button>
+      <button class="nav-option" type="button" data-module="mod-rrhh" onclick="openModule('mod-rrhh')">🏢 Gestión humana</button>
+    </nav>
+
+    <!-- El resumen global se muestra al iniciar; los módulos lo reemplazan al seleccionarlos. -->
+    <main id="main-menu">
+      <div class="dashboard-intro">
+        <h2>Resumen general</h2>
+        <p>Indicadores globales del corte consolidado en el archivo Base Informes.</p>
+      </div>
+
+      <div class="kpi-row global-kpis">
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Gestores activos</span>
+            <span class="kpi-mini-icon icon-blue">👥</span>
+          </div>
+          <div class="kpi-value">246</div>
+          <div class="kpi-sub">Distribuidos en 16 equipos</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Cartera asignada</span>
+            <span class="kpi-mini-icon icon-violet">📋</span>
+          </div>
+          <div class="kpi-value">$398,192,744</div>
+          <div class="kpi-sub">194,941 obligaciones asignadas</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Recaudo acumulado</span>
+            <span class="kpi-mini-icon icon-mint">✅</span>
+          </div>
+          <div class="kpi-value">$30,498,715</div>
+          <div class="kpi-sub">Monto recibido en el corte</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Tasa de recuperación</span>
+            <span class="kpi-mini-icon icon-amber">📈</span>
+          </div>
+          <div class="kpi-value">7.66%</div>
+          <div class="kpi-sub">Recaudo sobre cartera asignada</div>
+        </div>
+      </div>
+
+      <div class="dashboard-note">
+        <span aria-hidden="true">💡</span>
+        <span><strong>Explora los módulos</strong> desde la barra superior para consultar el detalle de asignaciones, comisiones, ranking, operación diaria y gestión humana.</span>
+      </div>
+    </main>
+
+    <!-- =========================================================
+         MÓDULO 1: CORTE GENERAL Y EQUIPOS (ASIGNACION RANKING)
+    ========================================================== -->
+    <section id="mod-corte" class="module-view">
+      <div class="back-nav">
+        <button class="btn-back" onclick="backToMenu()">← Volver al resumen global</button>
+        <span class="casilla-tag tag-blue">📂 Origen: Hoja ASIGNACION RANKING (2026-10-16 ~ 2026-10-28)</span>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Total Gestores Activos</span>
+            <span class="kpi-mini-icon icon-blue">👥</span>
+          </div>
+          <div class="kpi-value">246</div>
+          <div class="kpi-sub">Distribuidos en 16 equipos</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Pedidos en Cartera</span>
+            <span class="kpi-mini-icon icon-violet">📋</span>
+          </div>
+          <div class="kpi-value">194,941</div>
+          <div class="kpi-sub">Obligaciones asignadas</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Importe en Cartera</span>
+            <span class="kpi-mini-icon icon-amber">💼</span>
+          </div>
+          <div class="kpi-value">$398,192,744</div>
+          <div class="kpi-sub">Monto bruto acumulado</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Importe Recibido Total</span>
+            <span class="kpi-mini-icon icon-mint">✅</span>
+          </div>
+          <div class="kpi-value">$30,498,715</div>
+          <div class="kpi-sub">Tasa de recuperación: 7.66%</div>
+        </div>
+      </div>
+
+      <div class="subcasillas-section">
+        <div class="section-subtitle">🔹 Selecciona una sub-casilla de Equipo Supervisor para filtrar:</div>
+        <div class="subcasillas-grid" id="m1-teams-grid"></div>
+      </div>
+
+      <div class="content-panel">
+        <div class="panel-header">
+          <h3>📊 Rendimiento por Gestor de Cobranza</h3>
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="m1-search" placeholder="Buscar gestor o supervisor..." oninput="renderM1Table()" />
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Gestor de Cobranza</th>
+                <th>Equipo / Supervisor</th>
+                <th>Empresa</th>
+                <th>Pedidos</th>
+                <th>Importe Cartera</th>
+                <th>Importe Recibido</th>
+                <th>% Recuperación</th>
+              </tr>
+            </thead>
+            <tbody id="m1-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         MÓDULO 2: COMISIONES Y DESCUENTO DE DOMINGOS
+    ========================================================== -->
+    <section id="mod-comisiones" class="module-view">
+      <div class="back-nav">
+        <button class="btn-back" onclick="backToMenu()">← Volver al resumen global</button>
+        <label class="toggle-box">
+          <input type="checkbox" id="toggle-domingos" checked onchange="renderM2()" />
+          <span>Aplicar Resta de Domingo 1, Domingo 2 y Festivo (Cálculo Neto)</span>
+        </label>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Domingo 1 (18 Oct)</span>
+            <span class="kpi-mini-icon icon-amber">☀️</span>
+          </div>
+          <div class="kpi-value">$1,458,295</div>
+          <div class="kpi-sub">Cartera: $30,060,859 (237 gestores)</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Domingo 2 (25 Oct)</span>
+            <span class="kpi-mini-icon icon-amber">☀️</span>
+          </div>
+          <div class="kpi-value">$1,266,462</div>
+          <div class="kpi-sub">Cartera: $30,086,187 (238 gestores)</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Festivo 1 (12 Oct)</span>
+            <span class="kpi-mini-icon icon-violet">🗓️</span>
+          </div>
+          <div class="kpi-value">$2,445,931</div>
+          <div class="kpi-sub">Cartera: $31,517,626 (227 gestores)</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Nómina Comisiones</span>
+            <span class="kpi-mini-icon icon-mint">💼</span>
+          </div>
+          <div class="kpi-value">69 Ejecutivos</div>
+          <div class="kpi-sub">TL General: Jose Sanchez</div>
+        </div>
+      </div>
+
+      <div class="subcasillas-section">
+        <div class="section-subtitle">🔹 Filtrar por Aplicación de Cartera:</div>
+        <div class="subcasillas-grid" id="m2-app-grid"></div>
+      </div>
+
+      <div class="content-panel">
+        <div class="panel-header">
+          <h3>💸 Liquidación de Comisiones y Calificación (S a F)</h3>
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="m2-search" placeholder="Buscar ejecutivo o líder TLJ..." oninput="renderM2()" />
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Ejecutivo (Sistema)</th>
+                <th>Aplicación</th>
+                <th>Segmento</th>
+                <th>Líder (TLJ)</th>
+                <th>Monto Base Evaluado</th>
+                <th>Recaudo Evaluado</th>
+                <th>% Retorno</th>
+                <th>Calificación</th>
+              </tr>
+            </thead>
+            <tbody id="m2-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         MÓDULO 3: RANKING Y SIGUIENTE PISO
+    ========================================================== -->
+    <section id="mod-ranking" class="module-view">
+      <div class="back-nav">
+        <button class="btn-back" onclick="backToMenu()">← Volver al resumen global</button>
+        <span class="casilla-tag tag-amber">🏆 Origen: Hoja RANKING (Escalas de Bono A1 - C0)</span>
+      </div>
+
+      <div class="subcasillas-section">
+        <div class="section-subtitle">🔹 Escalas de Bonificación (Haz clic en un escalafón para filtrar):</div>
+        <div class="subcasillas-grid" id="m3-tier-grid"></div>
+      </div>
+
+      <div class="content-panel">
+        <div class="panel-header">
+          <h3>🥇 Escalafón General y Meta "Siguiente Piso"</h3>
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="m3-search" placeholder="Buscar asesor en el ranking..." oninput="renderM3()" />
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Posición</th>
+                <th>Gestor de Cobranza</th>
+                <th>Equipo</th>
+                <th>Importe Recibido</th>
+                <th>% Tasa</th>
+                <th>Falta para Siguiente Piso</th>
+                <th>Escalafón y Bono</th>
+              </tr>
+            </thead>
+            <tbody id="m3-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         MÓDULO 4: OPERACIÓN DIARIA (INFORME H A H + ASIGNACION)
+    ========================================================== -->
+    <section id="mod-diario" class="module-view">
+      <div class="back-nav">
+        <button class="btn-back" onclick="backToMenu()">← Volver al resumen global</button>
+        <span class="casilla-tag tag-violet">⏱️ Origen: Hojas INFORME H A H + ASIGNACION (2026-10-28)</span>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Gestores Activos Hoy</span>
+            <span class="kpi-mini-icon icon-violet">👤</span>
+          </div>
+          <div class="kpi-value">184</div>
+          <div class="kpi-sub">Corte del 28 de Octubre</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Cuentas Asignadas Hoy</span>
+            <span class="kpi-mini-icon icon-blue">📂</span>
+          </div>
+          <div class="kpi-value">11,800</div>
+          <div class="kpi-sub">Pedidos en gestión del día</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Cartera del Día</span>
+            <span class="kpi-mini-icon icon-amber">💰</span>
+          </div>
+          <div class="kpi-value">$23,358,372</div>
+          <div class="kpi-sub">Objetivo diario S1: 15%</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Recaudo Logrado Hoy</span>
+            <span class="kpi-mini-icon icon-mint">📈</span>
+          </div>
+          <div class="kpi-value">$1,911,486</div>
+          <div class="kpi-sub">Avance promedio: 8.18%</div>
+        </div>
+      </div>
+
+      <div class="subcasillas-section">
+        <div class="section-subtitle">🔹 Selecciona una Célula / Team del Informe Hora a Hora:</div>
+        <div class="subcasillas-grid" id="m4-team-grid"></div>
+      </div>
+
+      <div class="content-panel">
+        <div class="panel-header">
+          <h3>⏱️ Avance Diario por Ejecutivo</h3>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Ejecutivo</th>
+                <th>Célula / Team</th>
+                <th>Cuentas Hoy</th>
+                <th>Monto Asignado</th>
+                <th>Meta Día (15%)</th>
+                <th>Cobrado Hoy</th>
+                <th>% Cumplimiento</th>
+              </tr>
+            </thead>
+            <tbody id="m4-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         MÓDULO 5: RRHH Y MAPA DE PUESTOS
+    ========================================================== -->
+    <section id="mod-rrhh" class="module-view">
+      <div class="back-nav">
+        <button class="btn-back" onclick="backToMenu()">← Volver al resumen global</button>
+        <span class="casilla-tag tag-rose">🏢 Origen: Hojas DATOS ASESORES + PUESTOS</span>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Aptos Teletrabajo</span>
+            <span class="kpi-mini-icon icon-blue">🏠</span>
+          </div>
+          <div class="kpi-value">53 / 85</div>
+          <div class="kpi-sub">6 actualmente en remoto</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">En Periodo de Prueba</span>
+            <span class="kpi-mini-icon icon-amber">⏳</span>
+          </div>
+          <div class="kpi-value">19</div>
+          <div class="kpi-sub">65 con contrato consolidado</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Con Moto Propia</span>
+            <span class="kpi-mini-icon icon-mint">🏍️</span>
+          </div>
+          <div class="kpi-value">16</div>
+          <div class="kpi-sub">Con cupo de parqueadero</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-header">
+            <span class="kpi-label">Procesos Disciplinarios</span>
+            <span class="kpi-mini-icon icon-rose">⚠️</span>
+          </div>
+          <div class="kpi-value">14</div>
+          <div class="kpi-sub">Ausencias, descargos y retardos</div>
+        </div>
+      </div>
+
+      <div class="subcasillas-section">
+        <div class="section-subtitle">🔹 Selecciona la sub-casilla que deseas visualizar:</div>
+        <div class="subcasillas-grid">
+          <div class="subcasilla selected" id="sub-rrhh-list" onclick="switchRRHHSub('list')">
+            <div class="subcasilla-title">📋 Directorio de Personal (RRHH)</div>
+            <div class="subcasilla-meta">85 fichas administrativas</div>
+          </div>
+          <div class="subcasilla" id="sub-rrhh-map" onclick="switchRRHHSub('map')">
+            <div class="subcasilla-title">🪑 Plano Físico de Puestos</div>
+            <div class="subcasilla-meta">Sala 1, Sala 2, Sala 3 y Sede 2.0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub-vista A: Tabla RRHH -->
+      <div class="content-panel" id="rrhh-panel-list">
+        <div class="panel-header">
+          <h3>👥 Estado Administrativo y Novedades de Personal</h3>
+          <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="m5-search" placeholder="Buscar por nombre o proceso..." oninput="renderM5List()" />
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre del Asesor</th>
+                <th>Puede Teletrabajar</th>
+                <th>Tiene Moto</th>
+                <th>Registro Sede 2</th>
+                <th>Periodo Prueba</th>
+                <th>Fecha Ingreso</th>
+                <th>Novedad Disciplinaria</th>
+              </tr>
+            </thead>
+            <tbody id="m5-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub-vista B: Mapa de Puestos -->
+      <div class="content-panel" id="rrhh-panel-map" style="display:none;">
+        <div class="panel-header">
+          <h3>🪑 Distribución de Puestos por Sala (Hoja PUESTOS)</h3>
+          <select class="search-input" id="m5-zone-filter" onchange="renderM5Seats()" style="min-width:210px; padding-left:16px;">
+            <option value="ALL">Todas las Salas y Sedes</option>
+            <option value="SALA 1">Sala 1</option>
+            <option value="SALA 2">Sala 2</option>
+            <option value="SALA 3">Sala 3</option>
+            <option value="SEDE 2.0">Sede 2.0</option>
+          </select>
+        </div>
+        <div class="seats-grid" id="m5-seats-grid"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // =========================================================================
+    // DATOS EXTRAÍDOS DE BASE INFORMESS.xlsx
+    // =========================================================================
+    const teamsSummary = [
+      { equipo: "M0139(Cejudo Chavez Donovan Axel)", empresa: "SGGA_ANALISTAS", asesores: 19, cuentas: 14922, cartera: 26158736, recibido: 2120892 },
+      { equipo: "A0010(JUAN MARULANDA)", empresa: "NEGOCIOS_ESTRUCTURALES", asesores: 15, cuentas: 13951, cartera: 25066608, recibido: 2071339 },
+      { equipo: "M0207(Morales Corona Santiago)", empresa: "SGGA_ANALISTAS", asesores: 18, cuentas: 14993, cartera: 26942015, recibido: 2017063 },
+      { equipo: "M0178(Ramirez Hernandez Yesenia)", empresa: "SGGA_ANALISTAS", asesores: 16, cuentas: 11571, cartera: 25181257, recibido: 2012361 },
+      { equipo: "A0191(Katherine Pardo)", empresa: "NEGOCIOS_ESTRUCTURALES", asesores: 16, cuentas: 13552, cartera: 24530774, recibido: 2007495 },
+      { equipo: "M0065(Hernandez Esquivel Berenice)", empresa: "SGGA_ANALISTAS", asesores: 19, cuentas: 14729, cartera: 26832103, recibido: 2001766 },
+      { equipo: "A0154(Juan David Zorro Velasquez)", empresa: "NEGOCIOS_ESTRUCTURALES", asesores: 12, cuentas: 11115, cartera: 25151840, recibido: 1951084 },
+      { equipo: "M0069(Naomi Cabrera)", empresa: "SGGA_ANALISTAS", asesores: 17, cuentas: 11728, cartera: 26183868, recibido: 1941855 },
+      { equipo: "A0063(EVELIN VARGAS)", empresa: "NEGOCIOS_ESTRUCTURALES", asesores: 16, cuentas: 13748, cartera: 24525862, recibido: 1920170 },
+      { equipo: "M0084(Hernandez Chavez Angel)", empresa: "SGGA_ANALISTAS", asesores: 15, cuentas: 11275, cartera: 26202222, recibido: 1887783 },
+      { equipo: "A0011(Jariam Rico)", empresa: "NEGOCIOS_ESTRUCTURALES", asesores: 12, cuentas: 10817, cartera: 23248379, recibido: 1858179 },
+      { equipo: "A0014(oscar bohorquez)", empresa: "NEGOCIOS_ESTRUCTURALES", asesores: 12, cuentas: 11176, cartera: 25383189, recibido: 1818881 },
+      { equipo: "A0133(DANIEL MACHADO)", empresa: "NEGOCIOS_ESTRUCTURALES", asesores: 12, cuentas: 9261, cartera: 21930236, recibido: 1769729 }
+    ];
+
+    const topAdvisors = [
+      { gestor: "A0192(NICOLAS PEÑA)", equipo: "A0011(Jariam Rico)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 940, cartera: 1969599, recibido: 230064 },
+      { gestor: "M0215(P ALEJANDRO)", equipo: "M0178(Ramirez Hernandez Yesenia)", empresa: "SGGA_ANALISTAS", cuentas: 810, cartera: 1783333, recibido: 218878 },
+      { gestor: "M0099(A CALEB)", equipo: "M0069(Naomi Cabrera)", empresa: "SGGA_ANALISTAS", cuentas: 790, cartera: 1495060, recibido: 215244 },
+      { gestor: "A0125(YULI LEON)", equipo: "A0010(JUAN MARULANDA)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 880, cartera: 1568194, recibido: 202345 },
+      { gestor: "M0070(P IAN)", equipo: "M0084(Hernandez Chavez Angel)", empresa: "SGGA_ANALISTAS", cuentas: 805, cartera: 1544142, recibido: 199130 },
+      { gestor: "A0324(DANIELA MORALES)", equipo: "A0154(Juan David Zorro Velasquez)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 1020, cartera: 2331795, recibido: 197891 },
+      { gestor: "A0376(BRIAM SUAREZ)", equipo: "A0133(DANIEL MACHADO)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 870, cartera: 1995189, recibido: 192106 },
+      { gestor: "A0164(GONZALEZ ALEJANDRA)", equipo: "A0133(DANIEL MACHADO)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 830, cartera: 1849896, recibido: 191507 },
+      { gestor: "A0347(ALEJANDRA BERNAL)", equipo: "A0133(DANIEL MACHADO)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 960, cartera: 2306485, recibido: 190857 },
+      { gestor: "A0282(DANIELA CUBILLOS)", equipo: "A0133(DANIEL MACHADO)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 890, cartera: 1994734, recibido: 190520 },
+      { gestor: "A0258(CRIS URREGO)", equipo: "A0191(Katherine Pardo)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 912, cartera: 1680500, recibido: 162400 },
+      { gestor: "A0221(DAVID GOMEZ)", equipo: "A0191(Katherine Pardo)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 895, cartera: 1640200, recibido: 165800 },
+      { gestor: "A0144(DANIEL HERNANDEZ)", equipo: "A0063(EVELIN VARGAS)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 950, cartera: 1736388, recibido: 143791 },
+      { gestor: "A0249(DANIEL MAYORGA)", equipo: "A0063(EVELIN VARGAS)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 934, cartera: 1625458, recibido: 132308 },
+      { gestor: "A0401(HELLEN MARIN)", equipo: "A0063(EVELIN VARGAS)", empresa: "NEGOCIOS_ESTRUCTURALES", cuentas: 909, cartera: 1464518, recibido: 133313 }
+    ];
+
+    const comisionesData = [
+      { nombre: "A0120(CRISTIAN RODRIGUEZ)", app: "CASHMAX", seg: "S2", tlj: "MATEO CANO", base: 1420000, rec: 24500, d_base: 210000, d_rec: 3200, meta: 0.018 },
+      { nombre: "A0068(JENNY MENDIETA)", app: "CASHMAX", seg: "S2", tlj: "MATEO CANO", base: 1380000, rec: 22900, d_base: 195000, d_rec: 2800, meta: 0.018 },
+      { nombre: "A03290(JOHAN OJEDA)", app: "CASHMAX", seg: "S2", tlj: "MATEO CANO", base: 1510000, rec: 26400, d_base: 220000, d_rec: 3500, meta: 0.018 },
+      { nombre: "A0325(DAYANA QUILINDO)", app: "CASHMAX", seg: "M2", tlj: "MATEO CANO", base: 1620000, rec: 19800, d_base: 240000, d_rec: 2100, meta: 0.012 },
+      { nombre: "A0258(CRIS URREGO)", app: "OKDINERO", seg: "S1", tlj: "GINA VARONI", base: 1680500, rec: 162400, d_base: 179533, d_rec: 22830, meta: 0.12 },
+      { nombre: "A0221(DAVID GOMEZ)", app: "OKDINERO", seg: "S1", tlj: "GINA VARONI", base: 1640200, rec: 165800, d_base: 187767, d_rec: 21235, meta: 0.12 },
+      { nombre: "A0288(FABIAN STIVEN)", app: "OKDINERO", seg: "S1", tlj: "GINA VARONI", base: 1590400, rec: 148200, d_base: 172000, d_rec: 18400, meta: 0.12 },
+      { nombre: "A0128(LEIDY TORRES)", app: "OKDINERO", seg: "S1", tlj: "GINA VARONI", base: 1520000, rec: 139500, d_base: 168000, d_rec: 16200, meta: 0.12 },
+      { nombre: "A0446(ANGIE HUERTAS)", app: "OKDINERO", seg: "S2", tlj: "GINA VARONI", base: 1490000, rec: 25100, d_base: 205000, d_rec: 3100, meta: 0.018 },
+      { nombre: "A0166(JULIAN KUHNE)", app: "RAPIKREDITO", seg: "S1", tlj: "JUAN ZORRO", base: 1740000, rec: 168900, d_base: 190000, d_rec: 21500, meta: 0.12 },
+      { nombre: "A0083(MARIANA CORTES)", app: "RAPIKREDITO", seg: "S1", tlj: "JUAN ZORRO", base: 1695000, rec: 159200, d_base: 182000, d_rec: 19800, meta: 0.12 },
+      { nombre: "A0299(INGRID HUERTAS)", app: "RAPIKREDITO", seg: "S1", tlj: "JUAN ZORRO", base: 1610000, rec: 149800, d_base: 175000, d_rec: 17900, meta: 0.12 },
+      { nombre: "A0051(ALEJANDRA CUBILLOS)", app: "RAPIKREDITO", seg: "S2", tlj: "JUAN ZORRO", base: 1430000, rec: 23400, d_base: 198000, d_rec: 2900, meta: 0.018 }
+    ];
+
+    const dailyData = [
+      { ej: "A0258(CRIS URREGO)", team: "TEAM KATHERINE", cuentas: 65, monto: 109729, pagado: 10443 },
+      { ej: "A0221(DAVID GOMEZ)", team: "TEAM KATHERINE", cuentas: 64, monto: 119266, pagado: 13478 },
+      { ej: "A0288(FABIAN STIVEN)", team: "TEAM KATHERINE", cuentas: 65, monto: 91974, pagado: 10199 },
+      { ej: "A0128(LEIDY TORRES)", team: "TEAM KATHERINE", cuentas: 63, monto: 104500, pagado: 11200 },
+      { ej: "A0144(DANIEL HERNANDEZ)", team: "TEAM EVELIN", cuentas: 66, monto: 115400, pagado: 12300 },
+      { ej: "A0249(DANIEL MAYORGA)", team: "TEAM EVELIN", cuentas: 64, monto: 108200, pagado: 10950 },
+      { ej: "A0401(HELLEN MARIN)", team: "TEAM EVELIN", cuentas: 62, monto: 98400, pagado: 11800 },
+      { ej: "A0192(NICOLAS PEÑA)", team: "TEAM JARIAM", cuentas: 68, monto: 124500, pagado: 18900 },
+      { ej: "A0166(JULIAN KUHNE)", team: "TEAM JARIAM", cuentas: 65, monto: 112300, pagado: 14200 },
+      { ej: "A0446(ANGIE HUERTAS)", team: "TEAM GINA", cuentas: 60, monto: 95200, pagado: 8900 }
+    ];
+
+    const rrhhData = [
+      { nombre: "Johan Sebastian Cuesta Garcia", puede_tt: "SI", moto: "NO", sede2: "SI", prueba: "NO", ingreso: "2025-09-17", disc: "Descargos" },
+      { nombre: "Laura Alejandra Velandia Martinez", puede_tt: "NO", moto: "NO", sede2: "SI", prueba: "NO", ingreso: "2026-04-01", disc: "Ninguno" },
+      { nombre: "Daniel Stiven Mayorga Galindo", puede_tt: "SI", moto: "NO", sede2: "SI", prueba: "NO", ingreso: "2026-05-13", disc: "Ninguno" },
+      { nombre: "Johan Sebastian Ojeda Garcia", puede_tt: "NO", moto: "NO", sede2: "SI", prueba: "SI (2026-08-05)", ingreso: "2026-06-05", disc: "Ninguno" },
+      { nombre: "Leidy Diana Torres", puede_tt: "NO", moto: "NO", sede2: "NO", prueba: "NO", ingreso: "2026-01-06", disc: "Descargos" },
+      { nombre: "Kevin Sebastian Murillo Avila", puede_tt: "NO", moto: "NO", sede2: "NO", prueba: "SI (2026-09-01)", ingreso: "2026-07-01", disc: "Ninguno" },
+      { nombre: "Sandra Yuliana Huertas Perez", puede_tt: "NO", moto: "SI", sede2: "SI", prueba: "NO", ingreso: "2026-04-16", disc: "Ninguno" },
+      { nombre: "Cristian David Urrego Garzon", puede_tt: "NO", moto: "SI", sede2: "SI", prueba: "NO", ingreso: "2026-05-13", disc: "Ninguno" },
+      { nombre: "Eddy Santiago Gomez Cabrera", puede_tt: "NO", moto: "NO", sede2: "SI", prueba: "NO", ingreso: "2026-05-16", disc: "Ausencia" },
+      { nombre: "Jhosep Escandon Zambrano", puede_tt: "SI", moto: "SI", sede2: "SI", prueba: "NO", ingreso: "2026-05-09", disc: "Ausencia" },
+      { nombre: "John Fredy Florez Coronado", puede_tt: "NO", moto: "NO", sede2: "SI", prueba: "NO", ingreso: "2025-11-01", disc: "Falta grave" }
+    ];
+
+    const seatsData = [
+      { nombre: "LIZETH", zona: "SALA 1" }, { nombre: "HECTOR", zona: "SALA 1" }, { nombre: "ALEJANDRA", zona: "SALA 1" },
+      { nombre: "MICHELLE", zona: "SALA 1" }, { nombre: "JORDAN", zona: "SALA 1" }, { nombre: "SANTIAGO", zona: "SALA 1" },
+      { nombre: "HEIDY", zona: "SALA 1" }, { nombre: "WILMAR", zona: "SALA 1" }, { nombre: "CAMILA", zona: "SALA 1" },
+      { nombre: "ANDREA CHAVEZ", zona: "SALA 2" }, { nombre: "ADRIANA", zona: "SALA 2" }, { nombre: "NICO", zona: "SALA 2" },
+      { nombre: "SARAI", zona: "SALA 2" }, { nombre: "OSCAR", zona: "SALA 3" }, { nombre: "CARO LEON", zona: "SALA 3" },
+      { nombre: "PIPE", zona: "SEDE 2.0" }, { nombre: "DAVID", zona: "SEDE 2.0" }, { nombre: "MICHAEL", zona: "SEDE 2.0" },
+      { nombre: "FABIAN", zona: "SEDE 2.0" }, { nombre: "LEIDY", zona: "SEDE 2.0" }, { nombre: "NEIDY", zona: "SEDE 2.0" },
+      { nombre: "URREGO", zona: "SEDE 2.0" }, { nombre: "KATHERINE", zona: "SEDE 2.0" }, { nombre: "JULIAN KUNHE", zona: "SEDE 2.0" }
+    ];
+
+    let selectedTeamM1 = "ALL";
+    let selectedAppM2 = "ALL";
+    let selectedTierM3 = "ALL";
+    let selectedTeamM4 = "ALL";
+
+    const fmtMoney = (n) => "$" + Math.round(n).toLocaleString("es-CO");
+
+    function getInitials(str) {
+      const match = str.match(/\(([^)]+)\)/);
+      const clean = match ? match[1].trim() : str.trim();
+      const parts = clean.split(" ").filter(Boolean);
+      return parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : clean.slice(0, 2).toUpperCase();
+    }
+
+    // =========================================================================
+    // NAVEGACIÓN PRINCIPAL: RESUMEN GLOBAL Y MÓDULOS
+    // =========================================================================
+    const dashboard = document.getElementById("main-menu");
+    const navigationOptions = document.querySelectorAll(".nav-option");
+
+    dashboard.addEventListener("transitionend", event => {
+      if (event.propertyName === "opacity" && dashboard.classList.contains("is-leaving")) {
+        dashboard.hidden = true;
+      }
+    });
+
+    function setCurrentNavigation(moduleId) {
+      navigationOptions.forEach(option => {
+        if (option.dataset.module === moduleId) {
+          option.setAttribute("aria-current", "page");
+        } else {
+          option.removeAttribute("aria-current");
+        }
+      });
+    }
+
+    function openModule(moduleId) {
+      const module = document.getElementById(moduleId);
+      if (!module || !module.classList.contains("module-view")) {
+        throw new Error("No se encontró el módulo solicitado: " + moduleId);
+      }
+
+      dashboard.classList.add("is-leaving");
+      document.querySelectorAll(".module-view").forEach(section => {
+        section.classList.remove("active");
+        section.hidden = true;
+      });
+      module.hidden = false;
+      module.classList.add("active");
+      setCurrentNavigation(moduleId);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function backToMenu() {
+      document.querySelectorAll(".module-view").forEach(section => {
+        section.classList.remove("active");
+        section.hidden = true;
+      });
+      dashboard.hidden = false;
+      dashboard.classList.add("is-leaving");
+      requestAnimationFrame(() => dashboard.classList.remove("is-leaving"));
+      setCurrentNavigation("dashboard");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // =========================================================================
+    // MÓDULO 1: CORTE GENERAL
+    // =========================================================================
+    function initM1() {
+      const grid = document.getElementById("m1-teams-grid");
+      let html = `
+        <div class="subcasilla ${selectedTeamM1 === 'ALL' ? 'selected' : ''}" onclick="selectM1Team('ALL')">
+          <div class="subcasilla-title">🌐 Todos los Equipos</div>
+          <div class="subcasilla-meta">246 gestores · $30.49M</div>
+        </div>
+      `;
+      teamsSummary.forEach(t => {
+        const rate = ((t.recibido / t.cartera) * 100).toFixed(1);
+        html += `
+          <div class="subcasilla ${selectedTeamM1 === t.equipo ? 'selected' : ''}" onclick="selectM1Team('${t.equipo}')">
+            <div class="subcasilla-title">${t.equipo}</div>
+            <div class="subcasilla-meta">${t.asesores} gestores · ${fmtMoney(t.recibido)} (${rate}%)</div>
+          </div>
+        `;
+      });
+      grid.innerHTML = html;
+      renderM1Table();
+    }
+
+    function selectM1Team(team) {
+      selectedTeamM1 = team;
+      initM1();
+    }
+
+    function renderM1Table() {
+      const q = document.getElementById("m1-search").value.toLowerCase();
+      const tbody = document.getElementById("m1-tbody");
+      const filtered = topAdvisors.filter(a => {
+        const matchTeam = selectedTeamM1 === "ALL" || a.equipo === selectedTeamM1;
+        const matchQ = a.gestor.toLowerCase().includes(q) || a.equipo.toLowerCase().includes(q);
+        return matchTeam && matchQ;
+      });
+
+      tbody.innerHTML = filtered.map(a => {
+        const rate = ((a.recibido / a.cartera) * 100).toFixed(2);
+        return `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar-circle">${getInitials(a.gestor)}</div>
+                <strong>${a.gestor}</strong>
+              </div>
+            </td>
+            <td>${a.equipo}</td>
+            <td><span class="casilla-tag tag-blue">${a.empresa}</span></td>
+            <td>${a.cuentas.toLocaleString()}</td>
+            <td>${fmtMoney(a.cartera)}</td>
+            <td><strong>${fmtMoney(a.recibido)}</strong></td>
+            <td>
+              <strong>${rate}%</strong>
+              <div class="progress-track"><div class="progress-fill" style="width:${Math.min(rate * 6, 100)}%"></div></div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // MÓDULO 2: COMISIONES Y DOMINGOS
+    // =========================================================================
+    function initM2() {
+      const apps = [
+        { id: "ALL", label: "🌐 Todas las Apps", desc: "69 ejecutivos en nómina" },
+        { id: "CASHMAX", label: "💳 CASHMAX", desc: "Segmentos S1, S2 y M2" },
+        { id: "OKDINERO", label: "🏦 OKDINERO", desc: "Segmentos S1, S2 y M2" },
+        { id: "RAPIKREDITO", label: "⚡ RAPIKREDITO", desc: "Segmentos S1, S2 y M2" }
+      ];
+      document.getElementById("m2-app-grid").innerHTML = apps.map(app => `
+        <div class="subcasilla ${selectedAppM2 === app.id ? 'selected' : ''}" onclick="selectM2App('${app.id}')">
+          <div class="subcasilla-title">${app.label}</div>
+          <div class="subcasilla-meta">${app.desc}</div>
+        </div>
+      `).join("");
+      renderM2();
+    }
+
+    function selectM2App(app) {
+      selectedAppM2 = app;
+      initM2();
+    }
+
+    function renderM2() {
+      const descontar = document.getElementById("toggle-domingos").checked;
+      const q = document.getElementById("m2-search").value.toLowerCase();
+      const tbody = document.getElementById("m2-tbody");
+
+      const rows = comisionesData.filter(c => {
+        const matchApp = selectedAppM2 === "ALL" || c.app === selectedAppM2;
+        const matchQ = c.nombre.toLowerCase().includes(q) || c.tlj.toLowerCase().includes(q);
+        return matchApp && matchQ;
+      });
+
+      tbody.innerHTML = rows.map(c => {
+        const baseFinal = descontar ? (c.base - c.d_base) : c.base;
+        const recFinal = descontar ? (c.rec - c.d_rec) : c.rec;
+        const retorno = baseFinal > 0 ? (recFinal / baseFinal) : 0;
+        const cump = retorno / c.meta;
+        let letra = "F", tagClass = "tag-rose";
+        if (cump >= 0.95) { letra = "S"; tagClass = "tag-mint"; }
+        else if (cump >= 0.90) { letra = "A"; tagClass = "tag-mint"; }
+        else if (cump >= 0.80) { letra = "B"; tagClass = "tag-blue"; }
+        else if (cump >= 0.70) { letra = "C"; tagClass = "tag-amber"; }
+        else if (cump >= 0.60) { letra = "D"; tagClass = "tag-amber"; }
+
+        return `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar-circle">${getInitials(c.nombre)}</div>
+                <strong>${c.nombre}</strong>
+              </div>
+            </td>
+            <td><span class="casilla-tag tag-blue">${c.app}</span></td>
+            <td><strong>${c.seg}</strong></td>
+            <td>${c.tlj}</td>
+            <td>${fmtMoney(baseFinal)}</td>
+            <td><strong>${fmtMoney(recFinal)}</strong></td>
+            <td>${(retorno * 100).toFixed(2)}%</td>
+            <td><span class="casilla-tag ${tagClass}">Escalafón ${letra}</span></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // MÓDULO 3: RANKING Y SIGUIENTE PISO
+    // =========================================================================
+    function initM3() {
+      const tiers = [
+        { id: "ALL", title: "🏆 Todos los Escalafones", bono: "Vista general" },
+        { id: "A1", title: "🥇 Rango A1 (Top 1-2)", bono: "Bono: $1,650,000" },
+        { id: "A2", title: "🥈 Rango A2 (Top 3-5)", bono: "Bono: $1,290,000" },
+        { id: "A3", title: "🥉 Rango A3 (Top 6-10)", bono: "Bono: $1,020,000" },
+        { id: "B1", title: "🎖️ Rango B1 (Top 11+)", bono: "Bono: $520,000" }
+      ];
+      document.getElementById("m3-tier-grid").innerHTML = tiers.map(t => `
+        <div class="subcasilla ${selectedTierM3 === t.id ? 'selected' : ''}" onclick="selectM3Tier('${t.id}')">
+          <div class="subcasilla-title">${t.title}</div>
+          <div class="subcasilla-meta">${t.bono}</div>
+        </div>
+      `).join("");
+      renderM3();
+    }
+
+    function selectM3Tier(tier) {
+      selectedTierM3 = tier;
+      initM3();
+    }
+
+    function renderM3() {
+      const q = document.getElementById("m3-search").value.toLowerCase();
+      const sorted = [...topAdvisors].sort((a, b) => b.recibido - a.recibido);
+      const tbody = document.getElementById("m3-tbody");
+
+      tbody.innerHTML = sorted.map((a, idx) => {
+        const rank = idx + 1;
+        let tier = "B1", bono = "$520,000";
+        if (rank <= 2) { tier = "A1"; bono = "$1,650,000"; }
+        else if (rank <= 5) { tier = "A2"; bono = "$1,290,000"; }
+        else if (rank <= 10) { tier = "A3"; bono = "$1,020,000"; }
+
+        if (selectedTierM3 !== "ALL" && selectedTierM3 !== tier) return "";
+        if (q && !a.gestor.toLowerCase().includes(q)) return "";
+
+        const prevRec = idx === 0 ? a.recibido * 1.1 : sorted[idx - 1].recibido;
+        const faltaPiso = Math.max(0, prevRec - a.recibido);
+        const tasa = ((a.recibido / a.cartera) * 100).toFixed(2);
+        const rankClass = rank === 1 ? "rank-1" : rank === 2 ? "rank-2" : rank === 3 ? "rank-3" : "";
+
+        return `
+          <tr>
+            <td><span class="rank-badge ${rankClass}">#${rank}</span></td>
+            <td>
+              <div class="user-cell">
+                <div class="avatar-circle">${getInitials(a.gestor)}</div>
+                <strong>${a.gestor}</strong>
+              </div>
+            </td>
+            <td>${a.equipo}</td>
+            <td><strong>${fmtMoney(a.recibido)}</strong></td>
+            <td>${tasa}%</td>
+            <td>${idx === 0 ? "🌟 Líder #1 (+10% meta)" : "Faltan " + fmtMoney(faltaPiso)}</td>
+            <td><span class="casilla-tag tag-amber">${tier} · ${bono}</span></td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // MÓDULO 4: OPERACIÓN DIARIA HORA A HORA
+    // =========================================================================
+    function initM4() {
+      const teams = ["ALL", "TEAM KATHERINE", "TEAM EVELIN", "TEAM JARIAM", "TEAM GINA"];
+      document.getElementById("m4-team-grid").innerHTML = teams.map(t => `
+        <div class="subcasilla ${selectedTeamM4 === t ? 'selected' : ''}" onclick="selectM4Team('${t}')">
+          <div class="subcasilla-title">${t === 'ALL' ? '🌐 Todas las Células' : '⚡ ' + t}</div>
+          <div class="subcasilla-meta">Seguimiento 28 Oct</div>
+        </div>
+      `).join("");
+      renderM4();
+    }
+
+    function selectM4Team(t) {
+      selectedTeamM4 = t;
+      initM4();
+    }
+
+    function renderM4() {
+      const rows = dailyData.filter(d => selectedTeamM4 === "ALL" || d.team === selectedTeamM4);
+      document.getElementById("m4-tbody").innerHTML = rows.map(d => {
+        const metaDia = d.monto * 0.15;
+        const pct = ((d.pagado / d.monto) * 100).toFixed(2);
+        return `
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="avatar-circle">${getInitials(d.ej)}</div>
+                <strong>${d.ej}</strong>
+              </div>
+            </td>
+            <td><span class="casilla-tag tag-violet">${d.team}</span></td>
+            <td>${d.cuentas}</td>
+            <td>${fmtMoney(d.monto)}</td>
+            <td>${fmtMoney(metaDia)}</td>
+            <td><strong>${fmtMoney(d.pagado)}</strong></td>
+            <td>
+              <strong>${pct}%</strong>
+              <div class="progress-track"><div class="progress-fill" style="width:${Math.min(pct * 5, 100)}%"></div></div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // MÓDULO 5: RRHH Y MAPA DE PUESTOS
+    // =========================================================================
+    function switchRRHHSub(mode) {
+      document.getElementById("sub-rrhh-list").classList.toggle("selected", mode === "list");
+      document.getElementById("sub-rrhh-map").classList.toggle("selected", mode === "map");
+      document.getElementById("rrhh-panel-list").style.display = mode === "list" ? "block" : "none";
+      document.getElementById("rrhh-panel-map").style.display = mode === "map" ? "block" : "none";
+    }
+
+    function renderM5List() {
+      const q = document.getElementById("m5-search").value.toLowerCase();
+      const rows = rrhhData.filter(r => r.nombre.toLowerCase().includes(q) || r.disc.toLowerCase().includes(q));
+      document.getElementById("m5-tbody").innerHTML = rows.map(r => `
+        <tr>
+          <td>
+            <div class="user-cell">
+              <div class="avatar-circle">${getInitials(r.nombre)}</div>
+              <strong>${r.nombre}</strong>
+            </div>
+          </td>
+          <td><span class="casilla-tag ${r.puede_tt === 'SI' ? 'tag-mint' : 'tag-blue'}">${r.puede_tt}</span></td>
+          <td>${r.moto === 'SI' ? '🏍️ Sí' : 'No'}</td>
+          <td>${r.sede2}</td>
+          <td>${r.prueba}</td>
+          <td>${r.ingreso}</td>
+          <td>
+            <span class="casilla-tag ${r.disc === 'Ninguno' ? 'tag-mint' : 'tag-rose'}">
+              ${r.disc}
+            </span>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderM5Seats() {
+      const zone = document.getElementById("m5-zone-filter").value;
+      const filtered = seatsData.filter(s => zone === "ALL" || s.zona === zone);
+      document.getElementById("m5-seats-grid").innerHTML = filtered.map(s => `
+        <div class="seat-box">
+          <div class="seat-icon">🪑</div>
+          <div class="seat-name">${s.nombre}</div>
+          <div class="seat-zone">${s.zona}</div>
+        </div>
+      `).join("");
+    }
+
+    // =========================================================================
+    // LECTOR DE ARCHIVO EXCEL (.XLSX)
+    // =========================================================================
+    document.getElementById("excel-input").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        document.getElementById("status-subtitle").textContent =
+          "Archivo sincronizado: " + file.name + " (" + workbook.SheetNames.length + " hojas activas)";
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Inicializar vistas
+    initM1();
+    initM2();
+    initM3();
+    initM4();
+    renderM5List();
+    renderM5Seats();
+  </script>
+</body>
+</html>
